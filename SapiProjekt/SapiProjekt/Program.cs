@@ -7,11 +7,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSingleton<BacLoaderService>();
+builder.Services.AddHttpClient();
+
 
 
 var app = builder.Build();
 var loader = app.Services.GetRequiredService<BacLoaderService>();
 loader.LoadAllYears();
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

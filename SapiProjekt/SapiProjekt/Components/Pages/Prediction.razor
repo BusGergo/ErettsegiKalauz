@@ -1,0 +1,112 @@
+@page "/prediction"
+@using System.Text.Json.Serialization
+@using SapiProjekt.Models
+@using SapiProjekt.Services
+@inject BacLoaderService BacService
+@inject HttpClient Http
+
+<div class="card shadow-sm p-4">
+    <p>This page uses historical data to forecast statistics for Hungarian students taking the BAC exam.</p>
+
+    <button class="btn btn-primary mt-3" @onclick="RunPrediction">Run Predictions</button>
+
+    @if (predictionDone)
+    {
+        <div class="mt-4">
+            <h5>📅 Predictions for @nextYear:</h5>
+            <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>🇭🇺 Hungarian Student Count:</span>
+                    <strong>@predictedCount</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>📚 Average Grade:</span>
+                    <strong>@predictedAvgGrade.ToString("0.00")</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>✅ Pass Rate:</span>
+                    <strong>@predictedPassRate.ToString("0.0")%</strong>
+                </li>
+            </ul>
+
+            <div class="mt-4">
+                <h6>Historical Data Summary:</h6>
+                <table class="table table-sm table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Hungarian Count</th>
+                        <th>Avg Grade</th>
+                        <th>Pass %</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var year in historicalData.Keys.OrderBy(y => y))
+                    {
+                        <tr>
+                            <td>@year</td>
+                            <td>@historicalData[year].HungarianCount</td>
+                            <td>@historicalData[year].AverageGrade.ToString("0.00")</td>
+                            <td>@historicalData[year].PassRate.ToString("0.0")%</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private int predictedCount;
+    private double predictedAvgGrade;
+    private double predictedPassRate;
+    private int nextYear;
+    private bool predictionDone = false;
+
+    private Dictionary<int, YearlyStats> historicalData = new();
+
+    private record YearlyStats(int HungarianCount, double AverageGrade, double PassRate);
+
+    private async Task RunPrediction()
+    {
+        var grouped = BacService.Entries
+            .Where(e => e.Nationality == "Maghiara")
+            .GroupBy(e => e.Year)
+            .ToDictionary(
+                g => g.Key,
+                g => new YearlyStats(
+                    g.Count(),
+                    g.Average(e => e.Avg),
+                    100.0 * g.Count(e => e.Passed == 0) / g.Count()
+                )
+            );
+
+        historicalData = grouped;
+        var years = grouped.Keys.OrderBy(y => y).ToList();
+        if (!years.Any())
+        {
+            predictionDone = false;
+            return;
+        }
+        nextYear = years.Max() + 1;
+        
+        var response = await Http.PostAsJsonAsync("http://127.0.0.1:5000/predict", new { year = nextYear });
+        if (response.IsSuccessStatusCode)
+        {
+            var prediction = await response.Content.ReadFromJsonAsync<PredictionResult>();
+            predictedCount = (int)prediction.PredictedCount;
+            predictedAvgGrade = prediction.PredictedAvgGrade;
+            predictedPassRate = prediction.PredictedPassRate;
+        }
+
+        predictionDone = true;
+    }
+    
+
+private record PredictionResult(
+        [property: JsonPropertyName("predicted_count")] double PredictedCount,
+        [property: JsonPropertyName("predicted_avg_grade")] double PredictedAvgGrade,
+        [property: JsonPropertyName("predicted_pass_rate")] double PredictedPassRate
+    );
+}
