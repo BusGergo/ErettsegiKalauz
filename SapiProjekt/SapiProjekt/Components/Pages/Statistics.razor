@@ -1,0 +1,126 @@
+﻿@page "/statistics"
+@using SapiProjekt.Models
+@using SapiProjekt.Services
+@inject BacLoaderService BacService
+
+<div class="container py-5">
+    
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-4">
+            <label for="yearFilter" class="form-label fw-semibold">Szűrés év szerint:</label>
+            <select class="form-select" id="yearFilter" @bind="selectedYear">
+                <option value="">Összes</option>
+                @foreach (var year in years)
+                {
+                    <option value="@year">@year</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 align-self-end">
+            <button class="btn btn-primary w-100" @onclick="ApplyStatistics">Frissítés</button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 text-center">
+        <div class="col-md-3">
+            <div class="card shadow-sm rounded-3 border-0">
+                <div class="card-body">
+                    <h6>Átlagpontszám</h6>
+                    <h4>@averageScore.ToString("0.00")</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm rounded-3 border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6>Átmentek</h6>
+                    <h4>@passedCount</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm rounded-3 border-0 bg-danger text-white">
+                <div class="card-body">
+                    <h6>Elbuktak</h6>
+                    <h4>@failedCount</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm rounded-3 border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h6>Összes tanuló</h6>
+                    <h4>@totalCount</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- County Distribution -->
+    <div class="mt-5">
+        <h4 class="mb-3">📍 Megyei eloszlás</h4>
+        <ul class="list-group">
+            @foreach (var county in countyDistribution.OrderByDescending(c => c.Value))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@county.Key</span>
+                    <span>@county.Value</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    <!-- Specialization Distribution -->
+    <div class="mt-5">
+        <h4 class="mb-3">🎓 Szakirány szerinti eloszlás</h4>
+        <ul class="list-group">
+            @foreach (var specialization in specializationDistribution.OrderByDescending(s => s.Value))
+            {
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>@specialization.Key</span>
+                    <span>@specialization.Value</span>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@code {
+    private List<string> years = new();
+    private List<BacEntry> allEntries = new();
+    private string selectedYear;
+    private double averageScore;
+    private int passedCount;
+    private int failedCount;
+    private int totalCount;
+    private Dictionary<string, int> countyDistribution = new();
+    private Dictionary<string, int> specializationDistribution = new();
+
+    protected override void OnInitialized()
+    {
+        years = BacService.AvailableYears;
+        selectedYear = years.FirstOrDefault();
+        ApplyStatistics(); // Load initial stats
+    }
+
+    private void ApplyStatistics()
+    {
+        var entries = string.IsNullOrEmpty(selectedYear)
+            ? BacService.Entries
+            : BacService.Entries.Where(e => e.Year.ToString() == selectedYear).ToList();
+
+        totalCount = entries.Count;
+        passedCount = entries.Count(e => e.Passed == 1);
+        failedCount = entries.Count(e => e.Passed == 0);
+        averageScore = entries.Any() ? entries.Average(e => e.Avg) : 0;
+
+        countyDistribution = entries
+            .GroupBy(e => e.County)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        specializationDistribution = entries
+            .GroupBy(e => e.Specialization)
+            .ToDictionary(g => g.Key, g => g.Count());
+    }
+}

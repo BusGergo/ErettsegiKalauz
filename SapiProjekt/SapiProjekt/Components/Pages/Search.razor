@@ -1,0 +1,79 @@
+﻿@page "/search"
+@using SapiProjekt.Models
+@using SapiProjekt.Services
+@inject BacLoaderService BacService
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">🔍 Diák Keresése</h2>
+
+    <!-- Search Box -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input class="form-control" placeholder="Add meg a diák kódját..." @bind="searchCode" />
+                <button class="btn btn-primary" @onclick="SearchStudent">Keresés</button>
+            </div>
+        </div>
+    </div>
+
+    @if (searchPerformed)
+    {
+        @if (foundStudent != null)
+        {
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body">
+                    <div class="row">
+ 
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">📄 Általános Információ</h5>
+                            <p><strong>Kód:</strong> @foundStudent.Code</p>
+                            <p><strong>Év:</strong> @foundStudent.Year</p>
+                            <p><strong>Megye:</strong> @foundStudent.County</p>
+                            <p><strong>Szakirány:</strong> @foundStudent.Specialization</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="text-success mb-3">📊 Vizsga Eredmények</h5>
+                            <p><strong>Átlagpontszám:</strong> @foundStudent.Avg.ToString("0.00")</p>
+                            <p><strong>Matematika:</strong> @foundStudent.MandatoryGradeFinal</p>
+                            <p><strong>Román:</strong> @foundStudent.RomanianGradeFinal</p>
+                            @if (foundStudent.Nationality != "Romana")
+                            {
+                                <p><strong>Anyanyelv:</strong> @foundStudent.NativeGradeFinal</p>
+                            }
+                            <p><strong>Állapot:</strong> 
+                                @if (foundStudent.Passed == 0)
+                                {
+                                    <span class="badge bg-success">✅ Átment</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">❌ Elbukott</span>
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        else
+        {
+            <div class="alert alert-warning text-center">
+                Nincs találat a(z) <strong>@searchCode</strong> kódhoz.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private string searchCode;
+    private BacEntry foundStudent;
+    private bool searchPerformed = false;
+
+    private void SearchStudent()
+    {
+        searchPerformed = true;
+        foundStudent = BacService.Entries.FirstOrDefault(e => e.Code.Equals(searchCode, StringComparison.OrdinalIgnoreCase));
+    }
+}
