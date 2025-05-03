@@ -9,8 +9,9 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<BacLoaderService>();
 
 
-
 var app = builder.Build();
+var loader = app.Services.GetRequiredService<BacLoaderService>();
+loader.LoadAllYears();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
