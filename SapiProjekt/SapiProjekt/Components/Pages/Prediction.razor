@@ -6,38 +6,36 @@
 @inject HttpClient Http
 
 <div class="card shadow-sm p-4">
-    <p>This page uses historical data to forecast statistics for Hungarian students taking the BAC exam.</p>
-
-    <button class="btn btn-primary mt-3" @onclick="RunPrediction">Run Predictions</button>
+    <button class="btn btn-primary mt-3" @onclick="RunPrediction">Előrejelzések futtatása</button>
 
     @if (predictionDone)
     {
         <div class="mt-4">
-            <h5>📅 Predictions for @nextYear:</h5>
+            <h5>Előrejelzések a következő évre: @nextYear:</h5>
             <ul class="list-group">
                 <li class="list-group-item d-flex justify-content-between">
-                    <span>🇭🇺 Hungarian Student Count:</span>
+                    <span>🇭🇺 Magyar diákok száma:</span>
                     <strong>@predictedCount</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
-                    <span>📚 Average Grade:</span>
+                    <span>📚 Átlag jegy:</span>
                     <strong>@predictedAvgGrade.ToString("0.00")</strong>
                 </li>
                 <li class="list-group-item d-flex justify-content-between">
-                    <span>✅ Pass Rate:</span>
+                    <span>✅ Átmenési arány:</span>
                     <strong>@predictedPassRate.ToString("0.0")%</strong>
                 </li>
             </ul>
 
             <div class="mt-4">
-                <h6>Historical Data Summary:</h6>
+                <h6>Előző évek adatai:</h6>
                 <table class="table table-sm table-bordered">
                     <thead>
                     <tr>
-                        <th>Year</th>
-                        <th>Hungarian Count</th>
-                        <th>Avg Grade</th>
-                        <th>Pass %</th>
+                        <th>Év</th>
+                        <th>Magyar diákok száma</th>
+                        <th>Átlag jegy</th>
+                        <th>Átmenési arány</th>
                     </tr>
                     </thead>
                     <tbody>
